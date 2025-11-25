@@ -445,6 +445,22 @@ class KendoScoreboard {
         }
     }
 
+    calculateSummary() {
+        let redWins = 0;
+        let whiteWins = 0;
+        let redPoints = 0;
+        let whitePoints = 0;
+
+        this.state.matches.forEach(match => {
+            if (match.result === 'red') redWins++;
+            if (match.result === 'white') whiteWins++;
+            redPoints += match.red.ippons.length;
+            whitePoints += match.white.ippons.length;
+        });
+
+        return { redWins, whiteWins, redPoints, whitePoints };
+    }
+
     downloadResults() {
         const whiteTeamInput = document.querySelector('input[aria-label="White Team Name"]');
         const redTeamInput = document.querySelector('input[aria-label="Red Team Name"]');
