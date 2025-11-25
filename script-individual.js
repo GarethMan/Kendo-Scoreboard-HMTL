@@ -318,6 +318,17 @@ class KendoScoreboard {
         this.renderMatchScores(this.activeMatchIndex);
     }
 
+    startEncho() {
+        const match = this.getCurrentMatch();
+        this.saveState();
+        match.encho = true;
+        match.timer.minutes = 99;
+        match.timer.seconds = 59;
+        this.updateTimerDisplay();
+        this.renderRows();
+        this.startTimer();
+    }
+
     addFusen(player) {
         const match = this.getCurrentMatch();
         this.saveState();

@@ -342,20 +342,19 @@ button.btn-undo {
     border-color: #999;
 }
 
-/* Modal */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
+button.btn-fusen {
     width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    margin-bottom: 5px;
+    color: #8e44ad;
+    /* A purple shade for distinction */
+    border-color: #8e44ad;
 }
 
+button.btn-fusen:hover {
+    background: #f3e5f5;
+}
+
+/* Modal */
 .modal.hidden {
     display: none;
 }
@@ -389,6 +388,7 @@ button.btn-undo {
     border: 1px solid black;
     cursor: pointer;
 }
+
 /* Encho Mark */
 .mark-encho {
     font-size: 2rem;
