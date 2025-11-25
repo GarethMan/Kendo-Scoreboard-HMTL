@@ -402,3 +402,8 @@ button.btn-undo {
     font-weight: bold;
     color: black;
 }
+
+/* Daihyosha-sen Row */
+.daihyosha-row.hidden {
+    display: none;
+}

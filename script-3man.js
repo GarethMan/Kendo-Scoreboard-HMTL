@@ -18,13 +18,30 @@ class KendoScoreboard {
                 result: null,
                 winType: null,
                 history: []
-            }))
+            })),
+            daihyosha: {
+                active: false,
+                timer: {
+                    minutes: 5,
+                    seconds: 0,
+                    isRunning: false,
+                    intervalId: null,
+                    originalMinutes: 5,
+                    originalSeconds: 0
+                },
+                red: { ippons: [], hansoku: 0 },
+                white: { ippons: [], hansoku: 0 },
+                result: null,
+                winType: null,
+                history: []
+            }
         };
 
         this.dom = {
             timerDisplay: document.getElementById('timer-display'),
             btnStartStop: document.getElementById('btn-start-stop'),
             btnEndMatch: document.getElementById('btn-end-match'),
+            btnDaihyosha: document.getElementById('btn-daihyosha'),
             btnReset: document.getElementById('btn-reset'),
             btnResetAll: document.getElementById('btn-reset-all'),
             btnEditTime: document.getElementById('btn-edit-time'),
@@ -36,7 +53,8 @@ class KendoScoreboard {
             rowsContainer: document.getElementById('rows-container'),
             whiteSummary: document.getElementById('white-summary'),
             redSummary: document.getElementById('red-summary'),
-            winnerAnnouncement: document.getElementById('winner-announcement')
+            winnerAnnouncement: document.getElementById('winner-announcement'),
+            daihyoshaRow: document.getElementById('daihyosha-row')
         };
 
         this.init();
@@ -106,11 +124,21 @@ class KendoScoreboard {
                 row.classList.remove('active');
             }
         });
+
+        // Handle daihyosha row
+        if (this.dom.daihyoshaRow) {
+            if (this.activeMatchIndex === 'rep') {
+                this.dom.daihyoshaRow.classList.add('active');
+            } else {
+                this.dom.daihyoshaRow.classList.remove('active');
+            }
+        }
     }
 
     setupEventListeners() {
         this.dom.btnStartStop.addEventListener('click', () => this.toggleTimer());
         this.dom.btnEndMatch.addEventListener('click', () => this.endMatch());
+        this.dom.btnDaihyosha.addEventListener('click', () => this.startDaihyosha());
         this.dom.btnReset.addEventListener('click', () => this.resetMatch());
         this.dom.btnResetAll.addEventListener('click', () => this.resetAllMatches());
         this.dom.btnEditTime.addEventListener('click', () => this.openTimeModal());
@@ -215,7 +243,12 @@ class KendoScoreboard {
         match.winType = null;
         match.history = [];
         this.updateTimerDisplay();
-        this.renderRows();
+
+        if (this.activeMatchIndex === 'rep') {
+            this.renderDaihyoshaScores();
+        } else {
+            this.renderRows();
+        }
         this.updateSummary();
     }
 
@@ -230,6 +263,27 @@ class KendoScoreboard {
             match.winType = null;
             match.history = [];
         });
+
+        // Reset and hide daihyosha
+        const daihyosha = this.state.daihyosha;
+        daihyosha.active = false;
+        daihyosha.timer.minutes = daihyosha.timer.originalMinutes;
+        daihyosha.timer.seconds = daihyosha.timer.originalSeconds;
+        daihyosha.red = { ippons: [], hansoku: 0 };
+        daihyosha.white = { ippons: [], hansoku: 0 };
+        daihyosha.result = null;
+        daihyosha.winType = null;
+        daihyosha.history = [];
+
+        // Hide the daihyosha row
+        if (this.dom.daihyoshaRow) {
+            this.dom.daihyoshaRow.classList.add('hidden');
+            this.dom.daihyoshaRow.classList.remove('active');
+        }
+
+        // Reset to first match
+        this.activeMatchIndex = 0;
+
         this.renderRows();
         this.updateTimerDisplay();
         this.updateSummary();
@@ -279,7 +333,12 @@ class KendoScoreboard {
         match.white = previousState.white;
         match.result = previousState.result;
         match.winType = previousState.winType;
-        this.renderRows();
+
+        if (this.activeMatchIndex === 'rep') {
+            this.renderDaihyoshaScores();
+        } else {
+            this.renderRows();
+        }
         this.updateSummary();
     }
 
@@ -333,11 +392,26 @@ class KendoScoreboard {
             match.winType = 'hikiwaki';
         }
 
-        this.renderRows();
-        this.updateSummary();
+        // If this is daihyosha, display the winner immediately
+        if (this.activeMatchIndex === 'rep') {
+            this.renderDaihyoshaScores();
+            const whiteTeamName = document.querySelector('input[aria-label="White Team Name"]')?.value || 'WHITE TEAM';
+            const redTeamName = document.querySelector('input[aria-label="Red Team Name"]')?.value || 'RED TEAM';
 
-        if (this.activeMatchIndex < this.positions.length - 1) {
-            this.setActiveMatch(this.activeMatchIndex + 1);
+            if (match.result === 'white') {
+                this.dom.winnerAnnouncement.textContent = `Winner: ${whiteTeamName}`;
+            } else if (match.result === 'red') {
+                this.dom.winnerAnnouncement.textContent = `Winner: ${redTeamName}`;
+            } else {
+                this.dom.winnerAnnouncement.textContent = 'DRAW - HIKIWAKI';
+            }
+        } else {
+            this.renderRows();
+            this.updateSummary();
+
+            if (this.activeMatchIndex < this.positions.length - 1) {
+                this.setActiveMatch(this.activeMatchIndex + 1);
+            }
         }
     }
 
@@ -390,6 +464,10 @@ class KendoScoreboard {
     }
 
     renderMatchScores(index) {
+        if (index === 'rep') {
+            this.renderDaihyoshaScores();
+            return;
+        }
         const match = this.state.matches[index];
         this.renderPlayerScore(index, 'red', match.red, match.result === 'red', match.winType);
         this.renderPlayerScore(index, 'white', match.white, match.result === 'white', match.winType);
@@ -508,7 +586,38 @@ class KendoScoreboard {
         URL.revokeObjectURL(url);
     }
 
+    startDaihyosha() {
+        this.state.daihyosha.active = true;
+        this.dom.daihyoshaRow.classList.remove('hidden');
+        this.dom.daihyoshaRow.classList.add('active');
+
+        // Clear winner announcement
+        this.dom.winnerAnnouncement.textContent = '';
+
+        // Set up click listener for daihyosha row
+        this.dom.daihyoshaRow.addEventListener('click', () => {
+            this.stopTimer();
+            this.activeMatchIndex = 'rep';
+            this.updateActiveRowUI();
+            this.updateTimerDisplay();
+        });
+
+        // Activate the daihyosha row
+        this.activeMatchIndex = 'rep';
+        this.updateActiveRowUI();
+        this.updateTimerDisplay();
+    }
+
+    renderDaihyoshaScores() {
+        const match = this.state.daihyosha;
+        this.renderPlayerScore('rep', 'red', match.red, match.result === 'red', match.winType);
+        this.renderPlayerScore('rep', 'white', match.white, match.result === 'white', match.winType);
+    }
+
     getCurrentMatch() {
+        if (this.activeMatchIndex === 'rep') {
+            return this.state.daihyosha;
+        }
         return this.state.matches[this.activeMatchIndex];
     }
 }
