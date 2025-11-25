@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kendo Scoreboard - Team Match</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Timer Section -->
+        <header class="timer-header">
+            <div id="timer-display" class="timer">05:00</div>
+            <div class="timer-controls">
+                <button id="btn-start-stop">Start</button>
+                <button id="btn-end-match">End Match</button>
+                <button id="btn-reset">Reset Match</button>
+                <button id="btn-reset-all">Reset All</button>
+                <button id="btn-edit-time">Edit Time</button>
+            </div>
+        </header>
+
+        <!-- Scoreboard Table -->
+        <div class="scoreboard-table">
+            <!-- Headers -->
+            <div class="header-row">
+                <div class="cell header-cell order-cell">Order</div>
+                <div class="cell header-cell">White</div>
+                <div class="cell header-cell result-header"></div> <!-- Central Divider/Result -->
+                <div class="cell header-cell red-header">Red</div>
+                <div class="cell header-cell order-cell">Order</div>
+            </div>
+
+            <!-- Team Names -->
+            <div class="names-row">
+                <div class="cell empty-cell"></div>
+                <div class="cell name-cell">
+                    <input type="text" value="WHITE TEAM" aria-label="White Team Name" class="team-input">
+                </div>
+                <div class="cell result-cell"></div>
+                <div class="cell name-cell">
+                    <input type="text" value="RED TEAM" aria-label="Red Team Name" class="team-input">
+                </div>
+                <div class="cell empty-cell"></div>
+            </div>
+
+            <!-- Rows Container (Populated by JS) -->
+            <div id="rows-container">
+                <!-- 5 Rows will be generated here -->
+            </div>
+
+            <!-- Summary Row -->
+            <div class="summary-row">
+                <div class="cell empty-cell">Result</div>
+                <div class="cell summary-cell" id="white-summary">
+                    Wins: 0 | Pts: 0
+                </div>
+                <div class="cell result-cell"></div>
+                <div class="cell summary-cell" id="red-summary">
+                    Wins: 0 | Pts: 0
+                </div>
+                <div class="cell empty-cell"></div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-container">
+            <!-- White Controls -->
+            <div class="player-controls">
+                <h3>White Controls</h3>
+                <div class="btn-group">
+                    <button class="btn-score" data-player="white" data-type="M">Men</button>
+                    <button class="btn-score" data-player="white" data-type="K">Kote</button>
+                    <button class="btn-score" data-player="white" data-type="D">Do</button>
+                    <button class="btn-score" data-player="white" data-type="T">Tsuki</button>
+                </div>
+                <button class="btn-penalty" data-player="white">Hansoku</button>
+                <button class="btn-undo" data-player="white" data-action="undo">Undo</button>
+            </div>
+
+            <!-- Red Controls -->
+            <div class="player-controls">
+                <h3>Red Controls</h3>
+                <div class="btn-group">
+                    <button class="btn-score" data-player="red" data-type="M">Men</button>
+                    <button class="btn-score" data-player="red" data-type="K">Kote</button>
+                    <button class="btn-score" data-player="red" data-type="D">Do</button>
+                    <button class="btn-score" data-player="red" data-type="T">Tsuki</button>
+                </div>
+                <button class="btn-penalty" data-player="red">Hansoku</button>
+                <button class="btn-undo" data-player="red" data-action="undo">Undo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings / Modal for Time Edit -->
+    <div id="time-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Set Time</h2>
+            <input type="number" id="input-minutes" min="0" max="60" value="5"> :
+            <input type="number" id="input-seconds" min="0" max="59" value="00">
+            <div class="modal-actions">
+                <button id="btn-save-time">Save</button>
+                <button id="btn-cancel-time">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
