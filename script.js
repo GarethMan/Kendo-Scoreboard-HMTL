@@ -15,8 +15,8 @@ class KendoScoreboard {
                 },
                 red: { ippons: [], hansoku: 0 },
                 white: { ippons: [], hansoku: 0 },
-                result: null, // 'white', 'red', 'draw', or null
-                winType: null, // 'ippon-gachi' (1 point), 'nihon-gachi' (2 points), 'hikiwaki'
+                result: null,
+                winType: null,
                 history: []
             }))
         };
@@ -59,7 +59,6 @@ class KendoScoreboard {
             row.dataset.index = index;
             row.addEventListener('click', () => this.setActiveMatch(index));
 
-            // Determine Result Mark (X for Draw)
             let resultMark = '';
             if (match.result === 'draw') {
                 resultMark = '<div class="mark-hikiwaki">×</div>';
@@ -70,14 +69,11 @@ class KendoScoreboard {
                 <div class="cell name-cell">
                     <input type="text" value="Player ${index + 1}" class="name-input" aria-label="White Player ${pos}">
                 </div>
-                <!-- White Score -->
                 <div class="cell score-cell" id="white-score-${index}">
                     <div class="ippon-container" id="white-ippon-${index}"></div>
                     <div class="hansoku-container" id="white-hansoku-${index}"></div>
                 </div>
-                <!-- Result Column -->
                 <div class="cell result-cell">${resultMark}</div>
-                <!-- Red Score -->
                 <div class="cell score-cell" id="red-score-${index}">
                     <div class="ippon-container" id="red-ippon-${index}"></div>
                     <div class="hansoku-container" id="red-hansoku-${index}"></div>
@@ -144,6 +140,10 @@ class KendoScoreboard {
             });
         });
 
+        document.getElementById('btn-download').addEventListener('click', () => {
+            this.downloadResults();
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT') return;
             if (e.code === 'Space') {
@@ -157,7 +157,6 @@ class KendoScoreboard {
         return this.state.matches[this.activeMatchIndex];
     }
 
-    // --- Timer Logic ---
     toggleTimer() {
         const match = this.getCurrentMatch();
         if (match.timer.isRunning) {
@@ -221,13 +220,13 @@ class KendoScoreboard {
         match.winType = null;
         match.history = [];
         this.updateTimerDisplay();
-        this.renderRows(); // Re-render to clear result marks
+        this.renderRows();
         this.updateSummary();
     }
 
     resetAllMatches() {
         this.stopTimer();
-        this.state.matches.forEach((match, index) => {
+        this.state.matches.forEach((match) => {
             match.timer.minutes = match.timer.originalMinutes;
             match.timer.seconds = match.timer.originalSeconds;
             match.red = { ippons: [], hansoku: 0 };
@@ -265,8 +264,6 @@ class KendoScoreboard {
         this.closeTimeModal();
     }
 
-    // --- Scoring & End Match Logic ---
-
     saveState() {
         const match = this.getCurrentMatch();
         const stateCopy = JSON.parse(JSON.stringify({
@@ -287,7 +284,7 @@ class KendoScoreboard {
         match.white = previousState.white;
         match.result = previousState.result;
         match.winType = previousState.winType;
-        this.renderRows(); // Re-render for result marks
+        this.renderRows();
         this.updateSummary();
     }
 
@@ -341,10 +338,9 @@ class KendoScoreboard {
             match.winType = 'hikiwaki';
         }
 
-        this.renderRows(); // To show result marks (X)
+        this.renderRows();
         this.updateSummary();
 
-        // Advance to next match if possible
         if (this.activeMatchIndex < this.positions.length - 1) {
             this.setActiveMatch(this.activeMatchIndex + 1);
         }
@@ -370,7 +366,6 @@ class KendoScoreboard {
     }
 
     updateWinner(redWins, whiteWins, redPoints, whitePoints) {
-        // Check if all matches have ended
         const allMatchesEnded = this.state.matches.every(match => match.result !== null);
 
         if (!allMatchesEnded) {
@@ -378,18 +373,15 @@ class KendoScoreboard {
             return;
         }
 
-        // Get team names from inputs
         const whiteTeamName = document.querySelector('input[aria-label="White Team Name"]').value || 'WHITE TEAM';
         const redTeamName = document.querySelector('input[aria-label="Red Team Name"]').value || 'RED TEAM';
 
-        // Determine winner: first by wins, then by points
         let winner = '';
         if (whiteWins > redWins) {
             winner = `Winner: ${whiteTeamName}`;
         } else if (redWins > whiteWins) {
             winner = `Winner: ${redTeamName}`;
         } else {
-            // Wins are tied, check points
             if (whitePoints > redPoints) {
                 winner = `Winner: ${whiteTeamName}`;
             } else if (redPoints > whitePoints) {
@@ -451,6 +443,63 @@ class KendoScoreboard {
             mark.textContent = '▲';
             hansokuContainer.appendChild(mark);
         }
+    }
+
+    downloadResults() {
+        const whiteTeamInput = document.querySelector('input[aria-label="White Team Name"]');
+        const redTeamInput = document.querySelector('input[aria-label="Red Team Name"]');
+        const whiteTeamName = whiteTeamInput ? whiteTeamInput.value : 'WHITE TEAM';
+        const redTeamName = redTeamInput ? redTeamInput.value : 'RED TEAM';
+
+        const date = new Date().toLocaleDateString();
+        const time = new Date().toLocaleTimeString();
+
+        let csvContent = "Date,Time,Match Type,White Team,Red Team,Position,White Player,White Points,White Score,Red Score,Red Points,Red Player,Result,Win Type\n";
+
+        this.positions.forEach((pos, index) => {
+            const match = this.state.matches[index];
+            const whitePlayerInput = document.querySelector(`input[aria-label="White Player ${pos}"]`);
+            const redPlayerInput = document.querySelector(`input[aria-label="Red Player ${pos}"]`);
+
+            const whitePlayerName = whitePlayerInput ? whitePlayerInput.value : `Player ${index + 1}`;
+            const redPlayerName = redPlayerInput ? redPlayerInput.value : `Player ${index + 1}`;
+
+            const whitePoints = match.white.ippons.join(' ') || '';
+            const redPoints = match.red.ippons.join(' ') || '';
+            const whiteScore = match.white.ippons.length;
+            const redScore = match.red.ippons.length;
+
+            let result = match.result || 'Pending';
+            let winType = match.winType || '';
+
+            // Escape CSV fields
+            const safeWhiteTeam = `"${whiteTeamName.replace(/"/g, '""')}"`;
+            const safeRedTeam = `"${redTeamName.replace(/"/g, '""')}"`;
+            const safeWhitePlayer = `"${whitePlayerName.replace(/"/g, '""')}"`;
+            const safeRedPlayer = `"${redPlayerName.replace(/"/g, '""')}"`;
+
+            csvContent += `"${date}","${time}","5-Man Team",${safeWhiteTeam},${safeRedTeam},"${pos}",${safeWhitePlayer},"${whitePoints}",${whiteScore},${redScore},"${redPoints}",${safeRedPlayer},"${result}","${winType}"\n`;
+        });
+
+        // Add Summary Row
+        const summary = this.calculateSummary();
+        let winner = 'Draw';
+        if (summary.whiteWins > summary.redWins) winner = whiteTeamName;
+        else if (summary.redWins > summary.whiteWins) winner = redTeamName;
+        else if (summary.whitePoints > summary.redPoints) winner = `${whiteTeamName} (Points)`;
+        else if (summary.redPoints > summary.whitePoints) winner = `${redTeamName} (Points)`;
+
+        csvContent += `\n"SUMMARY",,,${summary.whiteWins} Wins / ${summary.whitePoints} Pts,,${summary.redWins} Wins / ${summary.redPoints} Pts,,,,,,,"Winner: ${winner.replace(/"/g, '""')}"\n`;
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kendo-match-${date.replace(/\//g, '-')}-${time.replace(/:/g, '-')}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 }
 

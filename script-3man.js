@@ -139,6 +139,10 @@ class KendoScoreboard {
             });
         });
 
+        document.getElementById('btn-download').addEventListener('click', () => {
+            this.downloadResults();
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT') return;
             if (e.code === 'Space') {
@@ -146,10 +150,6 @@ class KendoScoreboard {
                 this.toggleTimer();
             }
         });
-    }
-
-    getCurrentMatch() {
-        return this.state.matches[this.activeMatchIndex];
     }
 
     toggleTimer() {
@@ -433,6 +433,67 @@ class KendoScoreboard {
             mark.textContent = '▲';
             hansokuContainer.appendChild(mark);
         }
+    }
+
+    downloadResults() {
+        const whiteTeamInput = document.querySelector('input[aria-label="White Team Name"]');
+        const redTeamInput = document.querySelector('input[aria-label="Red Team Name"]');
+        const whiteTeamName = whiteTeamInput ? whiteTeamInput.value : 'WHITE TEAM';
+        const redTeamName = redTeamInput ? redTeamInput.value : 'RED TEAM';
+
+        const date = new Date().toLocaleDateString();
+        const time = new Date().toLocaleTimeString();
+
+        let csvContent = "Date,Time,Match Type,White Team,Red Team,Position,White Player,White Points,White Score,Red Score,Red Points,Red Player,Result,Win Type\n";
+
+        this.positions.forEach((pos, index) => {
+            const match = this.state.matches[index];
+            const whitePlayerInput = document.querySelector(`input[aria-label="White Player ${pos}"]`);
+            const redPlayerInput = document.querySelector(`input[aria-label="Red Player ${pos}"]`);
+
+            const whitePlayerName = whitePlayerInput ? whitePlayerInput.value : `Player ${index + 1}`;
+            const redPlayerName = redPlayerInput ? redPlayerInput.value : `Player ${index + 1}`;
+
+            const whitePoints = match.white.ippons.join(' ') || '';
+            const redPoints = match.red.ippons.join(' ') || '';
+            const whiteScore = match.white.ippons.length;
+            const redScore = match.red.ippons.length;
+
+            let result = match.result || 'Pending';
+            let winType = match.winType || '';
+
+            // Escape CSV fields
+            const safeWhiteTeam = `"${whiteTeamName.replace(/"/g, '""')}"`;
+            const safeRedTeam = `"${redTeamName.replace(/"/g, '""')}"`;
+            const safeWhitePlayer = `"${whitePlayerName.replace(/"/g, '""')}"`;
+            const safeRedPlayer = `"${redPlayerName.replace(/"/g, '""')}"`;
+
+            csvContent += `"${date}","${time}","3-Man Team",${safeWhiteTeam},${safeRedTeam},"${pos}",${safeWhitePlayer},"${whitePoints}",${whiteScore},${redScore},"${redPoints}",${safeRedPlayer},"${result}","${winType}"\n`;
+        });
+
+        // Add Summary Row
+        const summary = this.calculateSummary();
+        let winner = 'Draw';
+        if (summary.whiteWins > summary.redWins) winner = whiteTeamName;
+        else if (summary.redWins > summary.whiteWins) winner = redTeamName;
+        else if (summary.whitePoints > summary.redPoints) winner = `${whiteTeamName} (Points)`;
+        else if (summary.redPoints > summary.whitePoints) winner = `${redTeamName} (Points)`;
+
+        csvContent += `\n"SUMMARY",,,${summary.whiteWins} Wins / ${summary.whitePoints} Pts,,${summary.redWins} Wins / ${summary.redPoints} Pts,,,,,,,"Winner: ${winner.replace(/"/g, '""')}"\n`;
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kendo-3man-match-${date.replace(/\//g, '-')}-${time.replace(/:/g, '-')}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    getCurrentMatch() {
+        return this.state.matches[this.activeMatchIndex];
     }
 }
 
