@@ -1,8 +1,8 @@
 class KendoScoreboard {
     constructor() {
         this.positions = ['Senpo', 'Jiho', 'Chuken', 'Fukusho', 'Taisho'];
-        this.activeMatchIndex = 0; 
-        
+        this.activeMatchIndex = 0;
+
         this.state = {
             matches: this.positions.map(() => ({
                 timer: {
@@ -93,7 +93,7 @@ class KendoScoreboard {
 
     setActiveMatch(index) {
         if (this.activeMatchIndex !== index) {
-            this.stopTimer(); 
+            this.stopTimer();
             this.activeMatchIndex = index;
             this.updateActiveRowUI();
             this.updateTimerDisplay();
@@ -144,7 +144,7 @@ class KendoScoreboard {
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT') return; 
+            if (e.target.tagName === 'INPUT') return;
             if (e.code === 'Space') {
                 e.preventDefault();
                 this.toggleTimer();
@@ -307,7 +307,7 @@ class KendoScoreboard {
         const match = this.getCurrentMatch();
         this.saveState();
         match[player].hansoku++;
-        
+
         if (match[player].hansoku % 2 === 0) {
             const opponent = player === 'red' ? 'white' : 'red';
             if (match[opponent].ippons.length < 2) {
@@ -317,7 +317,7 @@ class KendoScoreboard {
                 }
             }
         }
-        
+
         this.renderMatchScores(this.activeMatchIndex);
     }
 
@@ -376,27 +376,38 @@ class KendoScoreboard {
         const ipponContainer = document.getElementById(`${player}-ippon-${index}`);
         if (!ipponContainer) return;
         ipponContainer.innerHTML = '';
-        
+
+        // For red team, we'll build marks in an array and reverse at the end
+        const marks = [];
+
         // Always render actual points first
         playerData.ippons.forEach(type => {
             const mark = document.createElement('div');
             mark.className = 'mark-ippon';
             mark.textContent = type;
-            ipponContainer.appendChild(mark);
+            marks.push(mark);
         });
 
         // If winner by 1 point (Ippon-gachi), append Boxed 1
         if (isWinner && winType === 'ippon-gachi') {
-             const mark = document.createElement('div');
-             mark.className = 'mark-ippon-gachi';
-             mark.textContent = '1';
-             ipponContainer.appendChild(mark);
+            const mark = document.createElement('div');
+            mark.className = 'mark-ippon-gachi';
+            mark.textContent = '1';
+            marks.push(mark);
         }
+
+        // For red team, reverse the order so points flow right-to-left
+        if (player === 'red') {
+            marks.reverse();
+        }
+
+        // Append all marks to container
+        marks.forEach(mark => ipponContainer.appendChild(mark));
 
         const hansokuContainer = document.getElementById(`${player}-hansoku-${index}`);
         if (!hansokuContainer) return;
         hansokuContainer.innerHTML = '';
-        
+
         const displayCount = playerData.hansoku % 2;
         for (let i = 0; i < displayCount; i++) {
             const mark = document.createElement('div');
