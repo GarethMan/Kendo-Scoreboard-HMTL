@@ -15,6 +15,7 @@
     <div class="main-container">
         <!-- Timer Section -->
         <header class="timer-header">
+            <a href="index.html" class="back-link">← Back to Menu</a>
             <div id="timer-display" class="timer">05:00</div>
             <div class="timer-controls">
                 <button id="btn-start-stop">Start</button>
@@ -49,21 +50,15 @@
                 <div class="cell empty-cell"></div>
             </div>
 
-            <!-- Rows Container (Populated by JS) -->
-            <div id="rows-container">
-                <!-- 3 Rows will be generated here -->
-            </div>
+            <!-- Rows Container -->
+            <div id="rows-container"></div>
 
             <!-- Summary Row -->
             <div class="summary-row">
                 <div class="cell empty-cell">Result</div>
-                <div class="cell summary-cell" id="white-summary">
-                    Wins: 0 | Pts: 0
-                </div>
+                <div class="cell summary-cell" id="white-summary">Wins: 0 | Pts: 0</div>
                 <div class="cell result-cell"></div>
-                <div class="cell summary-cell" id="red-summary">
-                    Wins: 0 | Pts: 0
-                </div>
+                <div class="cell summary-cell" id="red-summary">Wins: 0 | Pts: 0</div>
                 <div class="cell empty-cell"></div>
             </div>
 
@@ -75,7 +70,6 @@
 
         <!-- Controls -->
         <div class="controls-container">
-            <!-- White Controls -->
             <div class="player-controls">
                 <h3>White Controls</h3>
                 <div class="btn-group">
@@ -88,7 +82,6 @@
                 <button class="btn-undo" data-player="white" data-action="undo">Undo</button>
             </div>
 
-            <!-- Red Controls -->
             <div class="player-controls">
                 <h3>Red Controls</h3>
                 <div class="btn-group">
@@ -103,7 +96,7 @@
         </div>
     </div>
 
-    <!-- Settings / Modal for Time Edit -->
+    <!-- Modal -->
     <div id="time-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Set Time</h2>

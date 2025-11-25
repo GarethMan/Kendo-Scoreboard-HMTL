@@ -39,6 +39,24 @@ body {
 .timer-header {
     text-align: center;
     flex-shrink: 0;
+    position: relative;
+}
+
+.back-link {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    text-decoration: none;
+    padding: 5px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.back-link:hover {
+    background: #f0f0f0;
 }
 
 .timer {
@@ -206,7 +224,6 @@ body {
     line-height: 1;
 }
 
-/* Boxed 1 for Ippon-gachi */
 .mark-ippon-gachi {
     width: 40px;
     height: 40px;
@@ -218,7 +235,6 @@ body {
     font-weight: bold;
 }
 
-/* Hikiwaki X */
 .mark-hikiwaki {
     font-size: 2rem;
     font-weight: bold;
