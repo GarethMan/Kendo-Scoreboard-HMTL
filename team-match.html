@@ -20,6 +20,7 @@
             <div class="timer-controls">
                 <button id="btn-start-stop">Start</button>
                 <button id="btn-end-match">End Match</button>
+                <button id="btn-daihyosha">Daihyosha-sen</button>
                 <button id="btn-reset">Reset Match</button>
                 <button id="btn-reset-all">Reset All</button>
                 <button id="btn-edit-time">Edit Time</button>
@@ -63,6 +64,29 @@
                 <div class="cell empty-cell"></div>
             </div>
 
+            <!-- Daihyosha-sen Row (Representative Match) -->
+            <div class="match-row daihyosha-row hidden" id="daihyosha-row" data-index="rep">
+                <div class="cell order-cell">Daihyosha</div>
+                <div class="cell name-cell">
+                    <input type="text" value="White Representative" class="name-input"
+                        aria-label="White Player Representative">
+                </div>
+                <div class="cell score-cell" id="white-score-rep">
+                    <div class="ippon-container" id="white-ippon-rep"></div>
+                    <div class="hansoku-container" id="white-hansoku-rep"></div>
+                </div>
+                <div class="cell result-cell" id="result-cell-rep"></div>
+                <div class="cell score-cell" id="red-score-rep">
+                    <div class="ippon-container" id="red-ippon-rep"></div>
+                    <div class="hansoku-container" id="red-hansoku-rep"></div>
+                </div>
+                <div class="cell name-cell">
+                    <input type="text" value="Red Representative" class="name-input"
+                        aria-label="Red Player Representative">
+                </div>
+                <div class="cell order-cell">Daihyosha</div>
+            </div>
+
             <!-- Winner Announcement -->
             <div class="winner-row" id="winner-row">
                 <div class="winner-announcement" id="winner-announcement"></div>
@@ -80,6 +104,7 @@
                     <button class="btn-score" data-player="white" data-type="T">Tsuki</button>
                 </div>
                 <button class="btn-penalty" data-player="white">Hansoku</button>
+                <button class="btn-fusen" data-player="white">Fusen-gachi</button>
                 <button class="btn-undo" data-player="white" data-action="undo">Undo</button>
             </div>
 
@@ -92,6 +117,7 @@
                     <button class="btn-score" data-player="red" data-type="T">Tsuki</button>
                 </div>
                 <button class="btn-penalty" data-player="red">Hansoku</button>
+                <button class="btn-fusen" data-player="red">Fusen-gachi</button>
                 <button class="btn-undo" data-player="red" data-action="undo">Undo</button>
             </div>
         </div>

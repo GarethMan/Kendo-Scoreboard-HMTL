@@ -161,6 +161,13 @@ class KendoScoreboard {
             });
         });
 
+        document.querySelectorAll('.btn-fusen').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const player = e.target.dataset.player;
+                this.addFusen(player);
+            });
+        });
+
         document.querySelectorAll('.btn-undo').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.undoLastAction();
@@ -373,6 +380,16 @@ class KendoScoreboard {
         this.renderMatchScores(this.activeMatchIndex);
     }
 
+    addFusen(player) {
+        const match = this.getCurrentMatch();
+        this.saveState();
+
+        match[player].ippons = ['', ''];
+
+        this.stopTimer();
+        this.renderMatchScores(this.activeMatchIndex);
+    }
+
     endMatch() {
         const match = this.getCurrentMatch();
         this.stopTimer();
@@ -383,10 +400,18 @@ class KendoScoreboard {
 
         if (redScore > whiteScore) {
             match.result = 'red';
-            match.winType = redScore === 1 ? 'ippon-gachi' : 'nihon-gachi';
+            if (match.red.ippons.includes('')) {
+                match.winType = 'fusen-gachi';
+            } else {
+                match.winType = redScore === 1 ? 'ippon-gachi' : 'nihon-gachi';
+            }
         } else if (whiteScore > redScore) {
             match.result = 'white';
-            match.winType = whiteScore === 1 ? 'ippon-gachi' : 'nihon-gachi';
+            if (match.white.ippons.includes('')) {
+                match.winType = 'fusen-gachi';
+            } else {
+                match.winType = whiteScore === 1 ? 'ippon-gachi' : 'nihon-gachi';
+            }
         } else {
             match.result = 'draw';
             match.winType = 'hikiwaki';
@@ -529,6 +554,41 @@ class KendoScoreboard {
         return { redWins, whiteWins, redPoints, whitePoints };
     }
 
+    startDaihyosha() {
+        this.state.daihyosha.active = true;
+        this.dom.daihyoshaRow.classList.remove('hidden');
+        this.dom.daihyoshaRow.classList.add('active');
+
+        // Clear winner announcement
+        this.dom.winnerAnnouncement.textContent = '';
+
+        // Set up click listener for daihyosha row
+        this.dom.daihyoshaRow.addEventListener('click', () => {
+            this.stopTimer();
+            this.activeMatchIndex = 'rep';
+            this.updateActiveRowUI();
+            this.updateTimerDisplay();
+        });
+
+        // Activate the daihyosha row
+        this.activeMatchIndex = 'rep';
+        this.updateActiveRowUI();
+        this.updateTimerDisplay();
+    }
+
+    renderDaihyoshaScores() {
+        const match = this.state.daihyosha;
+        this.renderPlayerScore('rep', 'red', match.red, match.result === 'red', match.winType);
+        this.renderPlayerScore('rep', 'white', match.white, match.result === 'white', match.winType);
+    }
+
+    getCurrentMatch() {
+        if (this.activeMatchIndex === 'rep') {
+            return this.state.daihyosha;
+        }
+        return this.state.matches[this.activeMatchIndex];
+    }
+
     downloadResults() {
         const whiteTeamInput = document.querySelector('input[aria-label="White Team Name"]');
         const redTeamInput = document.querySelector('input[aria-label="Red Team Name"]');
@@ -584,41 +644,6 @@ class KendoScoreboard {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    }
-
-    startDaihyosha() {
-        this.state.daihyosha.active = true;
-        this.dom.daihyoshaRow.classList.remove('hidden');
-        this.dom.daihyoshaRow.classList.add('active');
-
-        // Clear winner announcement
-        this.dom.winnerAnnouncement.textContent = '';
-
-        // Set up click listener for daihyosha row
-        this.dom.daihyoshaRow.addEventListener('click', () => {
-            this.stopTimer();
-            this.activeMatchIndex = 'rep';
-            this.updateActiveRowUI();
-            this.updateTimerDisplay();
-        });
-
-        // Activate the daihyosha row
-        this.activeMatchIndex = 'rep';
-        this.updateActiveRowUI();
-        this.updateTimerDisplay();
-    }
-
-    renderDaihyoshaScores() {
-        const match = this.state.daihyosha;
-        this.renderPlayerScore('rep', 'red', match.red, match.result === 'red', match.winType);
-        this.renderPlayerScore('rep', 'white', match.white, match.result === 'white', match.winType);
-    }
-
-    getCurrentMatch() {
-        if (this.activeMatchIndex === 'rep') {
-            return this.state.daihyosha;
-        }
-        return this.state.matches[this.activeMatchIndex];
     }
 }
 

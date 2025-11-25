@@ -131,6 +131,13 @@ class KendoScoreboard {
             });
         });
 
+        document.querySelectorAll('.btn-fusen').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const player = e.target.dataset.player;
+                this.addFusen(player);
+            });
+        });
+
         document.querySelectorAll('.btn-undo').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.undoLastAction();
@@ -311,15 +318,15 @@ class KendoScoreboard {
         this.renderMatchScores(this.activeMatchIndex);
     }
 
-    startEncho() {
+    addFusen(player) {
         const match = this.getCurrentMatch();
         this.saveState();
-        match.encho = true;
-        match.timer.minutes = 99;
-        match.timer.seconds = 59;
-        this.updateTimerDisplay();
-        this.renderRows();
-        this.startTimer();
+
+        // Set ippons to two empty strings for blank circles
+        match[player].ippons = ['', ''];
+
+        this.stopTimer();
+        this.renderMatchScores(this.activeMatchIndex);
     }
 
     endMatch() {
