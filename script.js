@@ -378,18 +378,22 @@ class KendoScoreboard {
             return;
         }
 
+        // Get team names from inputs
+        const whiteTeamName = document.querySelector('input[aria-label="White Team Name"]').value || 'WHITE TEAM';
+        const redTeamName = document.querySelector('input[aria-label="Red Team Name"]').value || 'RED TEAM';
+
         // Determine winner: first by wins, then by points
         let winner = '';
         if (whiteWins > redWins) {
-            winner = 'WHITE TEAM WINS!';
+            winner = `Winner: ${whiteTeamName}`;
         } else if (redWins > whiteWins) {
-            winner = 'RED TEAM WINS!';
+            winner = `Winner: ${redTeamName}`;
         } else {
             // Wins are tied, check points
             if (whitePoints > redPoints) {
-                winner = 'WHITE TEAM WINS!';
+                winner = `Winner: ${whiteTeamName}`;
             } else if (redPoints > whitePoints) {
-                winner = 'RED TEAM WINS!';
+                winner = `Winner: ${redTeamName}`;
             } else {
                 winner = 'DRAW - HIKIWAKI';
             }
