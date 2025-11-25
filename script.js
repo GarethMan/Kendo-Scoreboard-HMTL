@@ -35,7 +35,8 @@ class KendoScoreboard {
             btnCancelTime: document.getElementById('btn-cancel-time'),
             rowsContainer: document.getElementById('rows-container'),
             whiteSummary: document.getElementById('white-summary'),
-            redSummary: document.getElementById('red-summary')
+            redSummary: document.getElementById('red-summary'),
+            winnerAnnouncement: document.getElementById('winner-announcement')
         };
 
         this.init();
@@ -364,6 +365,37 @@ class KendoScoreboard {
 
         this.dom.whiteSummary.textContent = `Wins: ${whiteWins} | Pts: ${whitePoints}`;
         this.dom.redSummary.textContent = `Wins: ${redWins} | Pts: ${redPoints}`;
+
+        this.updateWinner(redWins, whiteWins, redPoints, whitePoints);
+    }
+
+    updateWinner(redWins, whiteWins, redPoints, whitePoints) {
+        // Check if all matches have ended
+        const allMatchesEnded = this.state.matches.every(match => match.result !== null);
+
+        if (!allMatchesEnded) {
+            this.dom.winnerAnnouncement.textContent = '';
+            return;
+        }
+
+        // Determine winner: first by wins, then by points
+        let winner = '';
+        if (whiteWins > redWins) {
+            winner = 'WHITE TEAM WINS!';
+        } else if (redWins > whiteWins) {
+            winner = 'RED TEAM WINS!';
+        } else {
+            // Wins are tied, check points
+            if (whitePoints > redPoints) {
+                winner = 'WHITE TEAM WINS!';
+            } else if (redPoints > whitePoints) {
+                winner = 'RED TEAM WINS!';
+            } else {
+                winner = 'DRAW - HIKIWAKI';
+            }
+        }
+
+        this.dom.winnerAnnouncement.textContent = winner;
     }
 
     renderMatchScores(index) {
