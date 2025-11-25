@@ -16,6 +16,7 @@ class KendoScoreboard {
                 red: { ippons: [], hansoku: 0 },
                 white: { ippons: [], hansoku: 0 },
                 result: null,
+                encho: false,
                 history: []
             }))
         };
@@ -24,6 +25,7 @@ class KendoScoreboard {
             timerDisplay: document.getElementById('timer-display'),
             btnStartStop: document.getElementById('btn-start-stop'),
             btnEndMatch: document.getElementById('btn-end-match'),
+            btnEncho: document.getElementById('btn-encho'),
             btnReset: document.getElementById('btn-reset'),
             btnResetAll: document.getElementById('btn-reset-all'),
             btnEditTime: document.getElementById('btn-edit-time'),
@@ -57,6 +59,8 @@ class KendoScoreboard {
             let resultMark = '';
             if (match.result === 'draw') {
                 resultMark = '<div class="mark-hikiwaki">×</div>';
+            } else if (match.encho) {
+                resultMark = '<div class="mark-encho">E</div>';
             }
 
             row.innerHTML = `
@@ -104,6 +108,7 @@ class KendoScoreboard {
     setupEventListeners() {
         this.dom.btnStartStop.addEventListener('click', () => this.toggleTimer());
         this.dom.btnEndMatch.addEventListener('click', () => this.endMatch());
+        this.dom.btnEncho.addEventListener('click', () => this.startEncho());
         this.dom.btnReset.addEventListener('click', () => this.resetMatch());
         this.dom.btnResetAll.addEventListener('click', () => this.resetAllMatches());
         this.dom.btnEditTime.addEventListener('click', () => this.openTimeModal());
@@ -209,6 +214,7 @@ class KendoScoreboard {
         match.red = { ippons: [], hansoku: 0 };
         match.white = { ippons: [], hansoku: 0 };
         match.result = null;
+        match.encho = false;
         match.history = [];
         this.updateTimerDisplay();
         this.renderRows(); // Re-render to clear result mark
@@ -222,6 +228,7 @@ class KendoScoreboard {
             match.red = { ippons: [], hansoku: 0 };
             match.white = { ippons: [], hansoku: 0 };
             match.result = null;
+            match.encho = false;
             match.history = [];
         });
         this.renderRows();
@@ -302,6 +309,17 @@ class KendoScoreboard {
         }
 
         this.renderMatchScores(this.activeMatchIndex);
+    }
+
+    startEncho() {
+        const match = this.getCurrentMatch();
+        this.saveState();
+        match.encho = true;
+        match.timer.minutes = 99;
+        match.timer.seconds = 59;
+        this.updateTimerDisplay();
+        this.renderRows();
+        this.startTimer();
     }
 
     endMatch() {
