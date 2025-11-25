@@ -1,0 +1,349 @@
+:root {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --border-color: #000000;
+    --red-color: #ff0000;
+    --red-bg-highlight: #ffcccc;
+    --active-row-bg: #fffde7;
+    --active-row-border: #f1c40f;
+    --font-main: 'Noto Serif JP', serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.main-container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100vh;
+}
+
+/* Timer */
+.timer-header {
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.timer {
+    font-size: 3rem;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 5px;
+}
+
+.timer-controls button {
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    background: white;
+    border: 1px solid black;
+    cursor: pointer;
+}
+
+.timer-controls button:hover {
+    background: #f0f0f0;
+}
+
+#btn-end-match {
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
+
+/* Scoreboard Table */
+.scoreboard-table {
+    display: flex;
+    flex-direction: column;
+    border: 2px solid black;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.header-row, .names-row, .summary-row {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.match-row {
+    display: flex;
+    flex: 1;
+    border-top: 1px solid black;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.match-row:hover {
+    background-color: #f9f9f9;
+}
+
+.match-row.active {
+    background-color: var(--active-row-bg);
+    outline: 2px solid var(--active-row-border);
+    z-index: 1;
+}
+
+.cell {
+    flex: 1;
+    border-right: 1px solid black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    position: relative;
+}
+
+.cell:last-child {
+    border-right: none;
+}
+
+.order-cell {
+    flex: 0 0 60px;
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 5px;
+}
+
+.header-cell {
+    font-weight: bold;
+    font-size: 1.2rem;
+    background-color: #f0f0f0;
+    padding: 5px;
+    writing-mode: horizontal-tb;
+    letter-spacing: normal;
+}
+
+.red-header {
+    background-color: var(--red-bg-highlight);
+}
+
+.result-header, .result-cell {
+    flex: 0 0 40px;
+    background-color: #e0e0e0;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+}
+
+.empty-cell {
+    flex: 0 0 60px;
+    background: #eee;
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+}
+
+.name-cell {
+    padding: 0;
+}
+
+.team-input {
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: #f9f9f9;
+}
+
+.name-input, .team-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    text-align: center;
+    font-family: inherit;
+    padding: 5px;
+    outline: none;
+    background: transparent;
+}
+
+.name-input {
+    font-size: 1.2rem;
+}
+
+.score-cell {
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Marks */
+.ippon-container {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+    flex: 1;
+    align-items: center;
+}
+
+.mark-ippon {
+    width: 40px;
+    height: 40px;
+    border: 2px solid black;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* Boxed 1 for Ippon-gachi */
+.mark-ippon-gachi {
+    width: 40px;
+    height: 40px;
+    border: 2px solid black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Hikiwaki X */
+.mark-hikiwaki {
+    font-size: 2rem;
+    font-weight: bold;
+    color: black;
+}
+
+.hansoku-container {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 5px;
+    height: 20px;
+}
+
+.mark-hansoku {
+    color: var(--red-color);
+    font-size: 1.5rem;
+}
+
+/* Summary Row */
+.summary-row {
+    border-top: 2px solid black;
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+.summary-cell {
+    font-size: 1.1rem;
+}
+
+/* Controls */
+.controls-container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-shrink: 0;
+    padding-top: 10px;
+}
+
+.player-controls {
+    flex: 1;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.player-controls h3 {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.btn-group {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+button.btn-score, button.btn-penalty, button.btn-undo {
+    padding: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    background: white;
+    border: 1px solid black;
+    cursor: pointer;
+}
+
+button.btn-score:hover, button.btn-penalty:hover, button.btn-undo:hover {
+    background: #eee;
+}
+
+button.btn-penalty {
+    width: 100%;
+    margin-bottom: 5px;
+    color: red;
+    border-color: red;
+}
+
+button.btn-undo {
+    width: 100%;
+    font-size: 0.8rem;
+    color: #666;
+    border-color: #999;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border: 2px solid black;
+    text-align: center;
+}
+
+.modal-content input {
+    font-size: 2rem;
+    width: 80px;
+    padding: 5px;
+    text-align: center;
+    font-family: inherit;
+}
+
+.modal-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.modal-actions button {
+    padding: 5px 20px;
+    font-size: 1rem;
+    background: white;
+    border: 1px solid black;
+    cursor: pointer;
+}
