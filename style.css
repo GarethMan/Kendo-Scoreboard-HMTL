@@ -313,7 +313,8 @@ body {
 
 button.btn-score,
 button.btn-penalty,
-button.btn-undo {
+button.btn-undo,
+button.btn-fusen {
     padding: 8px;
     font-family: inherit;
     font-size: 0.9rem;
@@ -324,7 +325,8 @@ button.btn-undo {
 
 button.btn-score:hover,
 button.btn-penalty:hover,
-button.btn-undo:hover {
+button.btn-undo:hover,
+button.btn-fusen:hover {
     background: #eee;
 }
 
@@ -355,6 +357,19 @@ button.btn-fusen:hover {
 }
 
 /* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
 .modal.hidden {
     display: none;
 }
@@ -387,13 +402,6 @@ button.btn-fusen:hover {
     background: white;
     border: 1px solid black;
     cursor: pointer;
-}
-
-/* Encho Mark */
-.mark-encho {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #2980b9;
 }
 
 /* Encho Mark */

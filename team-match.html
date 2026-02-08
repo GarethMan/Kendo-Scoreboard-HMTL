@@ -136,7 +136,17 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="kendo-team-scoreboard.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        window.scoreboard = new KendoScoreboard({
+            positions: ['Senpo', 'Jiho', 'Chuken', 'Fukusho', 'Taisho'],
+            matchTypeLabel: '5-Man Team',
+            csvPrefix: 'kendo-match',
+            storageKey: 'kendo-5man'
+        });
+    });
+    </script>
 </body>
 
 </html>

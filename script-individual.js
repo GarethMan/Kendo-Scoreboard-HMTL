@@ -1,6 +1,7 @@
 class KendoScoreboard {
-    constructor() {
-        this.numMatches = 8; // 8 individual matches
+    constructor(config) {
+        this.numMatches = 8;
+        this.storageKey = (config && config.storageKey) || 'kendo-individual';
         this.activeMatchIndex = 0;
 
         this.state = {
@@ -15,6 +16,8 @@ class KendoScoreboard {
                 },
                 red: { ippons: [], hansoku: 0 },
                 white: { ippons: [], hansoku: 0 },
+                whiteName: '',
+                redName: '',
                 result: null,
                 encho: false,
                 history: []
@@ -41,6 +44,7 @@ class KendoScoreboard {
     }
 
     init() {
+        this.restoreState();
         this.renderRows();
         this.updateActiveRowUI();
         this.updateTimerDisplay();
@@ -63,9 +67,12 @@ class KendoScoreboard {
                 resultMark = '<div class="mark-encho">E</div>';
             }
 
+            const whiteName = match.whiteName || '';
+            const redName = match.redName || '';
+
             row.innerHTML = `
                 <div class="cell name-cell">
-                    <input type="text" value="" placeholder="White Player ${index + 1}" class="name-input" aria-label="White Player ${index + 1}">
+                    <input type="text" value="${whiteName}" placeholder="White Player ${index + 1}" class="name-input" aria-label="White Player ${index + 1}">
                 </div>
                 <div class="cell score-cell" id="white-score-${index}">
                     <div class="ippon-container" id="white-ippon-${index}"></div>
@@ -77,10 +84,27 @@ class KendoScoreboard {
                     <div class="hansoku-container" id="red-hansoku-${index}"></div>
                 </div>
                 <div class="cell name-cell">
-                    <input type="text" value="" placeholder="Red Player ${index + 1}" class="name-input" aria-label="Red Player ${index + 1}">
+                    <input type="text" value="${redName}" placeholder="Red Player ${index + 1}" class="name-input" aria-label="Red Player ${index + 1}">
                 </div>
             `;
             this.dom.rowsContainer.appendChild(row);
+
+            // Attach input listeners to sync names back to state
+            const whiteInput = row.querySelector(`input[aria-label="White Player ${index + 1}"]`);
+            const redInput = row.querySelector(`input[aria-label="Red Player ${index + 1}"]`);
+            if (whiteInput) {
+                whiteInput.addEventListener('input', () => {
+                    match.whiteName = whiteInput.value;
+                    this.persistState();
+                });
+            }
+            if (redInput) {
+                redInput.addEventListener('input', () => {
+                    match.redName = redInput.value;
+                    this.persistState();
+                });
+            }
+
             this.renderMatchScores(index);
         }
     }
@@ -204,6 +228,7 @@ class KendoScoreboard {
             }
         }
         this.updateTimerDisplay();
+        this.persistState();
     }
 
     updateTimerDisplay() {
@@ -224,10 +249,13 @@ class KendoScoreboard {
         match.encho = false;
         match.history = [];
         this.updateTimerDisplay();
-        this.renderRows(); // Re-render to clear result mark
+        this.renderRows();
+        this.persistState();
     }
 
     resetAllMatches() {
+        if (!confirm('Are you sure you want to reset all matches?')) return;
+
         this.stopTimer();
         this.state.matches.forEach((match) => {
             match.timer.minutes = match.timer.originalMinutes;
@@ -240,6 +268,7 @@ class KendoScoreboard {
         });
         this.renderRows();
         this.updateTimerDisplay();
+        localStorage.removeItem(this.storageKey);
     }
 
     openTimeModal() {
@@ -256,22 +285,33 @@ class KendoScoreboard {
 
     saveTime() {
         const match = this.getCurrentMatch();
-        const m = parseInt(this.dom.inputMinutes.value) || 0;
-        const s = parseInt(this.dom.inputSeconds.value) || 0;
+        let m = parseInt(this.dom.inputMinutes.value) || 0;
+        let s = parseInt(this.dom.inputSeconds.value) || 0;
+        // Issue 7: Clamp seconds 0-59, minutes >= 0
+        if (m < 0) m = 0;
+        if (s < 0) s = 0;
+        if (s > 59) s = 59;
         match.timer.minutes = m;
         match.timer.seconds = s;
         match.timer.originalMinutes = m;
         match.timer.originalSeconds = s;
         this.updateTimerDisplay();
         this.closeTimeModal();
+        this.persistState();
     }
 
     saveState() {
         const match = this.getCurrentMatch();
+        // Issue 3: Include encho in saved state
         const stateCopy = JSON.parse(JSON.stringify({
             red: match.red,
             white: match.white,
-            result: match.result
+            result: match.result,
+            encho: match.encho,
+            timer: {
+                minutes: match.timer.minutes,
+                seconds: match.timer.seconds
+            }
         }));
         match.history.push(stateCopy);
         if (match.history.length > 20) match.history.shift();
@@ -284,11 +324,23 @@ class KendoScoreboard {
         match.red = previousState.red;
         match.white = previousState.white;
         match.result = previousState.result;
-        this.renderRows(); // Re-render to update result mark
+        // Issue 3: Restore encho and timer on undo
+        if (previousState.encho !== undefined) {
+            match.encho = previousState.encho;
+        }
+        if (previousState.timer) {
+            match.timer.minutes = previousState.timer.minutes;
+            match.timer.seconds = previousState.timer.seconds;
+        }
+        this.updateTimerDisplay();
+        this.renderRows();
+        this.persistState();
     }
 
     addIppon(player, type) {
         const match = this.getCurrentMatch();
+        // Issue 2: Block scoring after match ended
+        if (match.result) return;
         if (match[player].ippons.length >= 2) return;
 
         this.saveState();
@@ -298,10 +350,14 @@ class KendoScoreboard {
         if (match[player].ippons.length === 2) {
             this.stopTimer();
         }
+        this.persistState();
     }
 
     addHansoku(player) {
         const match = this.getCurrentMatch();
+        // Issue 2: Block scoring after match ended
+        if (match.result) return;
+
         this.saveState();
         match[player].hansoku++;
 
@@ -316,6 +372,7 @@ class KendoScoreboard {
         }
 
         this.renderMatchScores(this.activeMatchIndex);
+        this.persistState();
     }
 
     startEncho() {
@@ -327,17 +384,24 @@ class KendoScoreboard {
         this.updateTimerDisplay();
         this.renderRows();
         this.startTimer();
+        this.persistState();
     }
 
     addFusen(player) {
         const match = this.getCurrentMatch();
+        // Issue 2: Block scoring after match ended
+        if (match.result) return;
+        // Issue 5: Block double fusen — if opponent already has fusen
+        const opponent = player === 'red' ? 'white' : 'red';
+        if (match[opponent].ippons.includes('')) return;
+
         this.saveState();
 
-        // Set ippons to two empty strings for blank circles
         match[player].ippons = ['', ''];
 
         this.stopTimer();
         this.renderMatchScores(this.activeMatchIndex);
+        this.persistState();
     }
 
     endMatch() {
@@ -357,6 +421,7 @@ class KendoScoreboard {
         }
 
         this.renderRows();
+        this.persistState();
 
         if (this.activeMatchIndex < this.numMatches - 1) {
             this.setActiveMatch(this.activeMatchIndex + 1);
@@ -410,8 +475,10 @@ class KendoScoreboard {
 
         for (let index = 0; index < this.numMatches; index++) {
             const match = this.state.matches[index];
-            const whitePlayerName = document.querySelector(`input[aria-label="White Player ${index + 1}"]`).value || `White Player ${index + 1}`;
-            const redPlayerName = document.querySelector(`input[aria-label="Red Player ${index + 1}"]`).value || `Red Player ${index + 1}`;
+
+            // Issue 1: Read names from state
+            const whitePlayerName = match.whiteName || `White Player ${index + 1}`;
+            const redPlayerName = match.redName || `Red Player ${index + 1}`;
 
             const whitePoints = match.white.ippons.join(' ') || '';
             const redPoints = match.red.ippons.join(' ') || '';
@@ -443,8 +510,64 @@ class KendoScoreboard {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
+
+    // Issue 13: Persistence
+    persistState() {
+        const data = {
+            activeMatchIndex: this.activeMatchIndex,
+            matches: this.state.matches.map(m => ({
+                timer: {
+                    minutes: m.timer.minutes,
+                    seconds: m.timer.seconds,
+                    originalMinutes: m.timer.originalMinutes,
+                    originalSeconds: m.timer.originalSeconds
+                },
+                red: m.red,
+                white: m.white,
+                whiteName: m.whiteName,
+                redName: m.redName,
+                result: m.result,
+                encho: m.encho
+            }))
+        };
+
+        localStorage.setItem(this.storageKey, JSON.stringify(data));
+    }
+
+    restoreState() {
+        const saved = localStorage.getItem(this.storageKey);
+        if (!saved) return;
+
+        try {
+            const data = JSON.parse(saved);
+
+            if (data.activeMatchIndex !== undefined) {
+                this.activeMatchIndex = data.activeMatchIndex;
+            }
+
+            if (data.matches && data.matches.length === this.state.matches.length) {
+                data.matches.forEach((savedMatch, i) => {
+                    const match = this.state.matches[i];
+                    if (savedMatch.timer) {
+                        match.timer.minutes = savedMatch.timer.minutes;
+                        match.timer.seconds = savedMatch.timer.seconds;
+                        match.timer.originalMinutes = savedMatch.timer.originalMinutes;
+                        match.timer.originalSeconds = savedMatch.timer.originalSeconds;
+                    }
+                    if (savedMatch.red) match.red = savedMatch.red;
+                    if (savedMatch.white) match.white = savedMatch.white;
+                    match.whiteName = savedMatch.whiteName || '';
+                    match.redName = savedMatch.redName || '';
+                    match.result = savedMatch.result;
+                    match.encho = savedMatch.encho || false;
+                });
+            }
+        } catch (e) {
+            // If parsing fails, start fresh
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.scoreboard = new KendoScoreboard();
+    window.scoreboard = new KendoScoreboard({ storageKey: 'kendo-individual' });
 });

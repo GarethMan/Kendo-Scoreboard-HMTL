@@ -1,6 +1,9 @@
 class KendoScoreboard {
-    constructor() {
-        this.positions = ['Senpo', 'Jiho', 'Chuken', 'Fukusho', 'Taisho'];
+    constructor(config) {
+        this.positions = config.positions;
+        this.matchTypeLabel = config.matchTypeLabel || 'Team';
+        this.csvPrefix = config.csvPrefix || 'kendo-match';
+        this.storageKey = config.storageKey || 'kendo-team';
         this.activeMatchIndex = 0;
 
         this.state = {
@@ -15,6 +18,8 @@ class KendoScoreboard {
                 },
                 red: { ippons: [], hansoku: 0 },
                 white: { ippons: [], hansoku: 0 },
+                whiteName: '',
+                redName: '',
                 result: null,
                 winType: null,
                 history: []
@@ -31,6 +36,8 @@ class KendoScoreboard {
                 },
                 red: { ippons: [], hansoku: 0 },
                 white: { ippons: [], hansoku: 0 },
+                whiteName: 'White Representative',
+                redName: 'Red Representative',
                 result: null,
                 winType: null,
                 history: []
@@ -61,11 +68,45 @@ class KendoScoreboard {
     }
 
     init() {
+        this.restoreState();
         this.renderRows();
         this.updateActiveRowUI();
         this.updateTimerDisplay();
         this.updateSummary();
         this.setupEventListeners();
+
+        // Restore daihyosha visibility if it was active
+        if (this.state.daihyosha.active && this.dom.daihyoshaRow) {
+            this.dom.daihyoshaRow.classList.remove('hidden');
+            this.renderDaihyoshaScores();
+            // Restore daihyosha names
+            const whiteRepInput = this.dom.daihyoshaRow.querySelector('input[aria-label="White Player Representative"]');
+            const redRepInput = this.dom.daihyoshaRow.querySelector('input[aria-label="Red Player Representative"]');
+            if (whiteRepInput) whiteRepInput.value = this.state.daihyosha.whiteName;
+            if (redRepInput) redRepInput.value = this.state.daihyosha.redName;
+        }
+
+        // Restore team names from localStorage
+        const saved = localStorage.getItem(this.storageKey);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.whiteTeamName) {
+                    const whiteTeamInput = document.querySelector('input[aria-label="White Team Name"]');
+                    if (whiteTeamInput) whiteTeamInput.value = parsed.whiteTeamName;
+                }
+                if (parsed.redTeamName) {
+                    const redTeamInput = document.querySelector('input[aria-label="Red Team Name"]');
+                    if (redTeamInput) redTeamInput.value = parsed.redTeamName;
+                }
+            } catch (e) { /* ignore parse errors */ }
+        }
+
+        // Listen for team name changes
+        const whiteTeamInput = document.querySelector('input[aria-label="White Team Name"]');
+        const redTeamInput = document.querySelector('input[aria-label="Red Team Name"]');
+        if (whiteTeamInput) whiteTeamInput.addEventListener('input', () => this.persistState());
+        if (redTeamInput) redTeamInput.addEventListener('input', () => this.persistState());
     }
 
     renderRows() {
@@ -82,10 +123,13 @@ class KendoScoreboard {
                 resultMark = '<div class="mark-hikiwaki">×</div>';
             }
 
+            const whiteName = match.whiteName || `Player ${index + 1}`;
+            const redName = match.redName || `Player ${index + 1}`;
+
             row.innerHTML = `
                 <div class="cell order-cell">${pos}</div>
                 <div class="cell name-cell">
-                    <input type="text" value="Player ${index + 1}" class="name-input" aria-label="White Player ${pos}">
+                    <input type="text" value="${whiteName}" class="name-input" aria-label="White Player ${pos}">
                 </div>
                 <div class="cell score-cell" id="white-score-${index}">
                     <div class="ippon-container" id="white-ippon-${index}"></div>
@@ -97,11 +141,28 @@ class KendoScoreboard {
                     <div class="hansoku-container" id="red-hansoku-${index}"></div>
                 </div>
                 <div class="cell name-cell">
-                    <input type="text" value="Player ${index + 1}" class="name-input" aria-label="Red Player ${pos}">
+                    <input type="text" value="${redName}" class="name-input" aria-label="Red Player ${pos}">
                 </div>
                 <div class="cell order-cell">${pos}</div>
             `;
             this.dom.rowsContainer.appendChild(row);
+
+            // Attach input listeners to sync names back to state
+            const whiteInput = row.querySelector(`input[aria-label="White Player ${pos}"]`);
+            const redInput = row.querySelector(`input[aria-label="Red Player ${pos}"]`);
+            if (whiteInput) {
+                whiteInput.addEventListener('input', () => {
+                    match.whiteName = whiteInput.value;
+                    this.persistState();
+                });
+            }
+            if (redInput) {
+                redInput.addEventListener('input', () => {
+                    match.redName = redInput.value;
+                    this.persistState();
+                });
+            }
+
             this.renderMatchScores(index);
         });
     }
@@ -186,6 +247,33 @@ class KendoScoreboard {
                 this.toggleTimer();
             }
         });
+
+        // Issue 4: Daihyosha click listener set up once here, with guard
+        if (this.dom.daihyoshaRow) {
+            this.dom.daihyoshaRow.addEventListener('click', () => {
+                if (!this.state.daihyosha.active) return;
+                this.stopTimer();
+                this.activeMatchIndex = 'rep';
+                this.updateActiveRowUI();
+                this.updateTimerDisplay();
+            });
+
+            // Listen for daihyosha name changes
+            const whiteRepInput = this.dom.daihyoshaRow.querySelector('input[aria-label="White Player Representative"]');
+            const redRepInput = this.dom.daihyoshaRow.querySelector('input[aria-label="Red Player Representative"]');
+            if (whiteRepInput) {
+                whiteRepInput.addEventListener('input', () => {
+                    this.state.daihyosha.whiteName = whiteRepInput.value;
+                    this.persistState();
+                });
+            }
+            if (redRepInput) {
+                redRepInput.addEventListener('input', () => {
+                    this.state.daihyosha.redName = redRepInput.value;
+                    this.persistState();
+                });
+            }
+        }
     }
 
     startDaihyosha() {
@@ -196,18 +284,11 @@ class KendoScoreboard {
         // Clear winner announcement
         this.dom.winnerAnnouncement.textContent = '';
 
-        // Set up click listener for daihyosha row
-        this.dom.daihyoshaRow.addEventListener('click', () => {
-            this.stopTimer();
-            this.activeMatchIndex = 'rep';
-            this.updateActiveRowUI();
-            this.updateTimerDisplay();
-        });
-
         // Activate the daihyosha row
         this.activeMatchIndex = 'rep';
         this.updateActiveRowUI();
         this.updateTimerDisplay();
+        this.persistState();
     }
 
     renderDaihyoshaScores() {
@@ -266,6 +347,7 @@ class KendoScoreboard {
             }
         }
         this.updateTimerDisplay();
+        this.persistState();
     }
 
     updateTimerDisplay() {
@@ -293,9 +375,12 @@ class KendoScoreboard {
             this.renderRows();
         }
         this.updateSummary();
+        this.persistState();
     }
 
     resetAllMatches() {
+        if (!confirm('Are you sure you want to reset all matches?')) return;
+
         this.stopTimer();
         this.state.matches.forEach((match) => {
             match.timer.minutes = match.timer.originalMinutes;
@@ -330,6 +415,7 @@ class KendoScoreboard {
         this.renderRows();
         this.updateTimerDisplay();
         this.updateSummary();
+        localStorage.removeItem(this.storageKey);
     }
 
     openTimeModal() {
@@ -346,14 +432,19 @@ class KendoScoreboard {
 
     saveTime() {
         const match = this.getCurrentMatch();
-        const m = parseInt(this.dom.inputMinutes.value) || 0;
-        const s = parseInt(this.dom.inputSeconds.value) || 0;
+        let m = parseInt(this.dom.inputMinutes.value) || 0;
+        let s = parseInt(this.dom.inputSeconds.value) || 0;
+        // Issue 7: Clamp seconds 0-59, minutes >= 0
+        if (m < 0) m = 0;
+        if (s < 0) s = 0;
+        if (s > 59) s = 59;
         match.timer.minutes = m;
         match.timer.seconds = s;
         match.timer.originalMinutes = m;
         match.timer.originalSeconds = s;
         this.updateTimerDisplay();
         this.closeTimeModal();
+        this.persistState();
     }
 
     saveState() {
@@ -383,10 +474,13 @@ class KendoScoreboard {
             this.renderRows();
         }
         this.updateSummary();
+        this.persistState();
     }
 
     addIppon(player, type) {
         const match = this.getCurrentMatch();
+        // Issue 2: Block scoring after match ended
+        if (match.result) return;
         if (match[player].ippons.length >= 2) return;
 
         this.saveState();
@@ -396,10 +490,14 @@ class KendoScoreboard {
         if (match[player].ippons.length === 2) {
             this.stopTimer();
         }
+        this.persistState();
     }
 
     addHansoku(player) {
         const match = this.getCurrentMatch();
+        // Issue 2: Block scoring after match ended
+        if (match.result) return;
+
         this.saveState();
         match[player].hansoku++;
 
@@ -414,16 +512,24 @@ class KendoScoreboard {
         }
 
         this.renderMatchScores(this.activeMatchIndex);
+        this.persistState();
     }
 
     addFusen(player) {
         const match = this.getCurrentMatch();
+        // Issue 2: Block scoring after match ended
+        if (match.result) return;
+        // Issue 5: Block double fusen — if opponent already has fusen
+        const opponent = player === 'red' ? 'white' : 'red';
+        if (match[opponent].ippons.includes('')) return;
+
         this.saveState();
 
         match[player].ippons = ['', ''];
 
         this.stopTimer();
         this.renderMatchScores(this.activeMatchIndex);
+        this.persistState();
     }
 
     endMatch() {
@@ -474,6 +580,7 @@ class KendoScoreboard {
                 this.setActiveMatch(this.activeMatchIndex + 1);
             }
         }
+        this.persistState();
     }
 
     updateSummary() {
@@ -608,11 +715,10 @@ class KendoScoreboard {
 
         this.positions.forEach((pos, index) => {
             const match = this.state.matches[index];
-            const whitePlayerInput = document.querySelector(`input[aria-label="White Player ${pos}"]`);
-            const redPlayerInput = document.querySelector(`input[aria-label="Red Player ${pos}"]`);
 
-            const whitePlayerName = whitePlayerInput ? whitePlayerInput.value : `Player ${index + 1}`;
-            const redPlayerName = redPlayerInput ? redPlayerInput.value : `Player ${index + 1}`;
+            // Issue 1: Read names from state instead of DOM
+            const whitePlayerName = match.whiteName || `Player ${index + 1}`;
+            const redPlayerName = match.redName || `Player ${index + 1}`;
 
             const whitePoints = match.white.ippons.join(' ') || '';
             const redPoints = match.red.ippons.join(' ') || '';
@@ -628,8 +734,28 @@ class KendoScoreboard {
             const safeWhitePlayer = `"${whitePlayerName.replace(/"/g, '""')}"`;
             const safeRedPlayer = `"${redPlayerName.replace(/"/g, '""')}"`;
 
-            csvContent += `"${date}","${time}","5-Man Team",${safeWhiteTeam},${safeRedTeam},"${pos}",${safeWhitePlayer},"${whitePoints}",${whiteScore},${redScore},"${redPoints}",${safeRedPlayer},"${result}","${winType}"\n`;
+            csvContent += `"${date}","${time}","${this.matchTypeLabel}",${safeWhiteTeam},${safeRedTeam},"${pos}",${safeWhitePlayer},"${whitePoints}",${whiteScore},${redScore},"${redPoints}",${safeRedPlayer},"${result}","${winType}"\n`;
         });
+
+        // Issue 6: Append daihyosha row to CSV if active
+        if (this.state.daihyosha.active) {
+            const d = this.state.daihyosha;
+            const whitePlayerName = d.whiteName || 'White Representative';
+            const redPlayerName = d.redName || 'Red Representative';
+            const whitePoints = d.white.ippons.join(' ') || '';
+            const redPoints = d.red.ippons.join(' ') || '';
+            const whiteScore = d.white.ippons.length;
+            const redScore = d.red.ippons.length;
+            const result = d.result || 'Pending';
+            const winType = d.winType || '';
+
+            const safeWhiteTeam = `"${whiteTeamName.replace(/"/g, '""')}"`;
+            const safeRedTeam = `"${redTeamName.replace(/"/g, '""')}"`;
+            const safeWhitePlayer = `"${whitePlayerName.replace(/"/g, '""')}"`;
+            const safeRedPlayer = `"${redPlayerName.replace(/"/g, '""')}"`;
+
+            csvContent += `"${date}","${time}","${this.matchTypeLabel}",${safeWhiteTeam},${safeRedTeam},"Daihyosha",${safeWhitePlayer},"${whitePoints}",${whiteScore},${redScore},"${redPoints}",${safeRedPlayer},"${result}","${winType}"\n`;
+        }
 
         // Add Summary Row
         const summary = this.calculateSummary();
@@ -645,14 +771,103 @@ class KendoScoreboard {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `kendo-match-${date.replace(/\//g, '-')}-${time.replace(/:/g, '-')}.csv`;
+        a.download = `${this.csvPrefix}-${date.replace(/\//g, '-')}-${time.replace(/:/g, '-')}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.scoreboard = new KendoScoreboard();
-});
+    // Issue 13: Persistence
+    persistState() {
+        const whiteTeamInput = document.querySelector('input[aria-label="White Team Name"]');
+        const redTeamInput = document.querySelector('input[aria-label="Red Team Name"]');
+
+        const data = {
+            whiteTeamName: whiteTeamInput ? whiteTeamInput.value : '',
+            redTeamName: redTeamInput ? redTeamInput.value : '',
+            activeMatchIndex: this.activeMatchIndex,
+            matches: this.state.matches.map(m => ({
+                timer: {
+                    minutes: m.timer.minutes,
+                    seconds: m.timer.seconds,
+                    originalMinutes: m.timer.originalMinutes,
+                    originalSeconds: m.timer.originalSeconds
+                },
+                red: m.red,
+                white: m.white,
+                whiteName: m.whiteName,
+                redName: m.redName,
+                result: m.result,
+                winType: m.winType
+            })),
+            daihyosha: {
+                active: this.state.daihyosha.active,
+                timer: {
+                    minutes: this.state.daihyosha.timer.minutes,
+                    seconds: this.state.daihyosha.timer.seconds,
+                    originalMinutes: this.state.daihyosha.timer.originalMinutes,
+                    originalSeconds: this.state.daihyosha.timer.originalSeconds
+                },
+                red: this.state.daihyosha.red,
+                white: this.state.daihyosha.white,
+                whiteName: this.state.daihyosha.whiteName,
+                redName: this.state.daihyosha.redName,
+                result: this.state.daihyosha.result,
+                winType: this.state.daihyosha.winType
+            }
+        };
+
+        localStorage.setItem(this.storageKey, JSON.stringify(data));
+    }
+
+    restoreState() {
+        const saved = localStorage.getItem(this.storageKey);
+        if (!saved) return;
+
+        try {
+            const data = JSON.parse(saved);
+
+            if (data.activeMatchIndex !== undefined) {
+                this.activeMatchIndex = data.activeMatchIndex;
+            }
+
+            if (data.matches && data.matches.length === this.state.matches.length) {
+                data.matches.forEach((savedMatch, i) => {
+                    const match = this.state.matches[i];
+                    if (savedMatch.timer) {
+                        match.timer.minutes = savedMatch.timer.minutes;
+                        match.timer.seconds = savedMatch.timer.seconds;
+                        match.timer.originalMinutes = savedMatch.timer.originalMinutes;
+                        match.timer.originalSeconds = savedMatch.timer.originalSeconds;
+                    }
+                    if (savedMatch.red) match.red = savedMatch.red;
+                    if (savedMatch.white) match.white = savedMatch.white;
+                    match.whiteName = savedMatch.whiteName || '';
+                    match.redName = savedMatch.redName || '';
+                    match.result = savedMatch.result;
+                    match.winType = savedMatch.winType;
+                });
+            }
+
+            if (data.daihyosha) {
+                const d = this.state.daihyosha;
+                d.active = data.daihyosha.active || false;
+                if (data.daihyosha.timer) {
+                    d.timer.minutes = data.daihyosha.timer.minutes;
+                    d.timer.seconds = data.daihyosha.timer.seconds;
+                    d.timer.originalMinutes = data.daihyosha.timer.originalMinutes;
+                    d.timer.originalSeconds = data.daihyosha.timer.originalSeconds;
+                }
+                if (data.daihyosha.red) d.red = data.daihyosha.red;
+                if (data.daihyosha.white) d.white = data.daihyosha.white;
+                d.whiteName = data.daihyosha.whiteName || 'White Representative';
+                d.redName = data.daihyosha.redName || 'Red Representative';
+                d.result = data.daihyosha.result;
+                d.winType = data.daihyosha.winType;
+            }
+        } catch (e) {
+            // If parsing fails, start fresh
+        }
+    }
+}

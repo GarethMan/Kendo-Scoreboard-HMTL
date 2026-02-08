@@ -136,7 +136,17 @@
         </div>
     </div>
 
-    <script src="script-3man.js"></script>
+    <script src="kendo-team-scoreboard.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        window.scoreboard = new KendoScoreboard({
+            positions: ['Senpo', 'Chuken', 'Taisho'],
+            matchTypeLabel: '3-Man Team',
+            csvPrefix: 'kendo-3man-match',
+            storageKey: 'kendo-3man'
+        });
+    });
+    </script>
 </body>
 
 </html>
